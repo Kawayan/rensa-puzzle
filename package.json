@@ -1,0 +1,22 @@
+{
+  "name": "color-panel-puzzle",
+  "version": "1.0.0",
+  "description": "7x7 color panel puzzle game",
+  "license": "MIT",
+  "author": "Kawayan",
+  "type": "commonjs",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "start": "lite-server"
+  },
+  "engines": {
+    "node": ">=18.12.0"
+  },
+  "devDependencies": {
+    "lite-server": "^2.6.1",
+    "typescript": "^6.0.3"
+  }
+}
