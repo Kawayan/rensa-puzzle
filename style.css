@@ -234,6 +234,59 @@ main {
   font-size: 1.35rem;
 }
 
+.score-ranking {
+  margin-bottom: 20px;
+}
+
+.ranking-title {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+#scoreList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 20px;
+}
+
+#scoreList li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  counter-increment: rank;
+}
+
+#scoreList li::before {
+  content: counter(rank);
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--border);
+  min-width: 14px;
+  text-align: right;
+}
+
+#scoreList {
+  counter-reset: rank;
+}
+
+#scoreList li.rank-current {
+  color: var(--primary-dark);
+  font-weight: 800;
+}
+
+#scoreList li.rank-current::before {
+  color: var(--primary);
+}
+
 #restartBtn {
   border: none;
   background: var(--primary);

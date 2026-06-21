@@ -15,6 +15,7 @@ const FADE_MS = 3000;        // 消えるまでの時間
 const FALL_MS = 300;         // 落下アニメ時間(CSS .falling と合わせる)
 const TIME_LIMIT_MS = 30000;        // タイムリミット(30秒)
 const RECOVER_MS_PER_PANEL = 500;   // パネル1枚消すごとの回復時間
+const SCORE_KEY = "puzzle-best10";  // localStorage キー
 
 type Color = (typeof COLORS)[number];
 
@@ -35,6 +36,7 @@ const timeBarFillEl = document.getElementById("timebar-fill") as HTMLDivElement;
 const timeBarTextEl = document.getElementById("timebar-text") as HTMLSpanElement;
 const gameOverEl = document.getElementById("gameover") as HTMLDivElement;
 const finalScoreEl = document.getElementById("finalScore") as HTMLSpanElement;
+const scoreListEl = document.getElementById("scoreList") as HTMLOListElement;
 const restartBtn = document.getElementById("restartBtn") as HTMLButtonElement;
 
 // ---- 状態 ----
@@ -390,10 +392,52 @@ function updateTimeBar(): void {
   timeBarTextEl.textContent = String(Math.ceil(timeLeftMs / 1000));
 }
 
+// ---- スコア保存 (localStorage) ----
+function loadBest10(): number[] {
+  try {
+    const raw = localStorage.getItem(SCORE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((v): v is number => typeof v === "number").slice(0, 10);
+  } catch {
+    return [];
+  }
+}
+
+function saveBest10(newScore: number): number[] {
+  const scores = loadBest10();
+  scores.push(newScore);
+  scores.sort((a, b) => b - a);
+  const top10 = scores.slice(0, 10);
+  try {
+    localStorage.setItem(SCORE_KEY, JSON.stringify(top10));
+  } catch {
+    /* storage unavailable */
+  }
+  return top10;
+}
+
+function renderScoreRanking(scores: number[], currentScore: number): void {
+  scoreListEl.innerHTML = "";
+  let highlighted = false;
+  for (const s of scores) {
+    const li = document.createElement("li");
+    li.textContent = String(s);
+    if (!highlighted && s === currentScore) {
+      li.classList.add("rank-current");
+      highlighted = true;
+    }
+    scoreListEl.appendChild(li);
+  }
+}
+
 function triggerGameOver(): void {
   gameOver = true;
   isDragging = false;
   finalScoreEl.textContent = String(score);
+  const top10 = saveBest10(score);
+  renderScoreRanking(top10, score);
   gameOverEl.classList.remove("hidden");
 }
 
