@@ -1,6 +1,6 @@
 :root {
-  --size: 7;
-  --cell: min(64px, calc((100vw - 40px) / 7), calc((100vh - 240px) / 7));
+  --size: 8;
+  --cell: min(64px, calc((100vw - 40px) / 8), calc((100vh - 240px) / 8));
   --gap: 4px;
 
   --primary: #6366f1;
@@ -223,6 +223,6 @@ footer {
 /* ---- Responsive ---- */
 @media (max-width: 720px) {
   :root {
-    --cell: min(48px, calc((100vw - 32px) / 7));
+    --cell: min(48px, calc((100vw - 32px) / 8));
   }
 }

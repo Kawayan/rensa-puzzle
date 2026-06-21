@@ -7,12 +7,11 @@
 //  - 消えかけの塊に同色をつなぐと消失タイマーがリセットされる
 
 const VERSION = "1.0.0";
-const SIZE = 7;
+const SIZE = 8;
 const CELL_COUNT = SIZE * SIZE;
 const COLORS = ["red", "blue", "green", "yellow", "purple"] as const;
 const MIN_MATCH = 5;
 const FADE_MS = 3000;        // 消えるまでの時間
-const FADE_MIN_OPACITY = 0.15;
 const FALL_MS = 300;         // 落下アニメ時間(CSS .falling と合わせる)
 
 type Color = (typeof COLORS)[number];
@@ -49,11 +48,31 @@ const colOf = (i: number): number => i % SIZE;
 const clamp = (v: number, lo: number, hi: number): number =>
   Math.max(lo, Math.min(hi, v));
 
-// CSS 変数(--cell, --gap)を使った transform 文字列
+// 盤面の実寸からセル・余白(px)を求める
+function boardMetrics(): { gap: number; cell: number; step: number } {
+  const rect = boardEl.getBoundingClientRect();
+  const gap = parseFloat(getComputedStyle(boardEl).getPropertyValue("--gap")) || 4;
+  const cell = (rect.width - (SIZE + 1) * gap) / SIZE;
+  return { gap, cell, step: cell + gap };
+}
+
+// セル座標 → transform 文字列(px)。
+// calc(var()) 同士の transform はトランジション補間が効かないため px で指定する。
 function cellTransform(row: number, col: number): string {
-  const x = `calc(var(--gap) + ${col} * (var(--cell) + var(--gap)))`;
-  const y = `calc(var(--gap) + ${row} * (var(--cell) + var(--gap)))`;
-  return `translate(${x}, ${y})`;
+  const { gap, step } = boardMetrics();
+  const x = gap + col * step;
+  const y = gap + row * step;
+  return `translate(${x}px, ${y}px)`;
+}
+
+// 全パネルを論理位置へ再配置(リサイズ時など)
+function syncAllPositions(): void {
+  for (let i = 0; i < CELL_COUNT; i++) {
+    const p = board[i];
+    if (!p) continue;
+    const el = panelEls.get(p.id);
+    if (el) el.style.transform = cellTransform(rowOf(i), colOf(i));
+  }
 }
 
 // ---- 盤面生成 ----
@@ -246,19 +265,20 @@ function followPointer(el: HTMLDivElement, clientX: number, clientY: number): vo
 // ---- 消去判定 (仕様3・5) ----
 function resolveMatches(): void {
   const now = performance.now();
-  const comps = findComponents().filter((c) => c.length >= MIN_MATCH);
+  const comps = findComponents();
   for (const comp of comps) {
     const panels = comp.map((i) => board[i]!);
     const hasFading = panels.some((p) => p.fadingSince !== null);
     const hasFresh = panels.some((p) => p.fadingSince === null);
-    if (!hasFading) {
-      // 新しい塊 → フェード開始
+    if (hasFading && hasFresh) {
+      // 消えかけのパネルに同色が接触 → サイズに関わらず連結した同色を
+      // すべて巻き込んで消失させ、タイマーをリセットする
       for (const p of panels) p.fadingSince = now;
-    } else if (hasFresh) {
-      // 消えかけの塊に同色が加わった → タイマーリセット
+    } else if (!hasFading && comp.length >= MIN_MATCH) {
+      // 新しく5個以上つながった塊 → フェード開始
       for (const p of panels) p.fadingSince = now;
     }
-    // 既に全員フェード中で新規が無い場合は何もしない(既存スケジュール維持)
+    // それ以外(全員フェード中で新規なし / 5未満で消えかけ無し)は変更しない
   }
 }
 
@@ -330,7 +350,10 @@ function tick(): void {
     if (elapsed >= FADE_MS) {
       expired.push(i);
     } else if (el) {
-      el.style.opacity = String(1 - (elapsed / FADE_MS) * (1 - FADE_MIN_OPACITY));
+      // 上から徐々に色が抜けていき、残った色が下端まで減ると消失する
+      const prog = Math.min(elapsed / FADE_MS, 1);
+      const pct = (prog * 100).toFixed(1);
+      el.style.background = `linear-gradient(to bottom, transparent ${pct}%, var(--c-${p.color}) ${pct}%)`;
     }
   }
 
@@ -377,6 +400,9 @@ boardEl.addEventListener("pointermove", onPointerMove);
 boardEl.addEventListener("pointerup", onPointerUp);
 boardEl.addEventListener("pointercancel", onPointerUp);
 resetBtn.addEventListener("click", reset);
+window.addEventListener("resize", () => {
+  if (!isDragging) syncAllPositions();
+});
 
 reset();
 requestAnimationFrame(tick);
