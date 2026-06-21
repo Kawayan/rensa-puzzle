@@ -28,6 +28,10 @@
   </header>
 
   <main>
+    <div id="timebar" aria-label="残り時間">
+      <div id="timebar-fill"></div>
+      <span id="timebar-text">30</span>
+    </div>
     <p class="hint">
       パネルを<kbd>ドラッグ</kbd>して動かそう &nbsp;·&nbsp; 同じ色を <strong>5個以上</strong> つなげると消える
     </p>
@@ -41,6 +45,14 @@
       消えかけのかたまりに同じ色をつなぐと、消える時間がリセットされます。
     </div>
   </footer>
+
+  <div id="gameover" class="hidden" aria-hidden="true">
+    <div class="gameover-card">
+      <div class="gameover-title">GAME OVER</div>
+      <div class="gameover-score">SCORE <span id="finalScore">0</span></div>
+      <button id="restartBtn">もう一度</button>
+    </div>
+  </div>
 
   <script type="module" src="dist/app.js" defer></script>
 </body>

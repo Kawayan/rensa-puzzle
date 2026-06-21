@@ -19,6 +19,10 @@
   --c-purple: #a855f7;
 
   --board-bg: #334155;
+
+  --time-high: #22c55e;
+  --time-mid: #f59e0b;
+  --time-low: #ef4444;
 }
 
 * {
@@ -151,6 +155,103 @@ main {
 
 .hint strong {
   color: var(--primary-dark);
+}
+
+/* ---- Time limit bar ---- */
+#timebar {
+  position: relative;
+  width: calc(var(--size) * var(--cell) + (var(--size) + 1) * var(--gap));
+  height: 18px;
+  background: #1e293b;
+  border-radius: 9px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+#timebar-fill {
+  height: 100%;
+  width: 100%;
+  background: var(--time-high);
+  border-radius: 9px;
+  transition: background 0.3s;
+}
+
+#timebar-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* ---- Game over overlay ---- */
+#gameover {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.6);
+  z-index: 100;
+}
+
+#gameover.hidden {
+  display: none;
+}
+
+.gameover-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 28px 40px;
+  text-align: center;
+  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.35);
+}
+
+.gameover-title {
+  font-size: 1.9rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--time-low);
+  margin-bottom: 8px;
+}
+
+.gameover-score {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  letter-spacing: 0.06em;
+}
+
+.gameover-score span {
+  font-weight: 800;
+  color: var(--text);
+  font-size: 1.35rem;
+}
+
+#restartBtn {
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 10px 26px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+#restartBtn:hover {
+  background: var(--primary-dark);
+}
+
+#restartBtn:active {
+  transform: scale(0.96);
 }
 
 /* ---- Preview row (操作不可・次に落ちてくる色) ---- */

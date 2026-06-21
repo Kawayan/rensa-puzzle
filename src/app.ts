@@ -13,6 +13,8 @@ const COLORS = ["red", "blue", "green", "yellow", "purple"] as const;
 const MIN_MATCH = 5;
 const FADE_MS = 3000;        // 消えるまでの時間
 const FALL_MS = 300;         // 落下アニメ時間(CSS .falling と合わせる)
+const TIME_LIMIT_MS = 30000;        // タイムリミット(30秒)
+const RECOVER_MS_PER_PANEL = 500;   // パネル1枚消すごとの回復時間
 
 type Color = (typeof COLORS)[number];
 
@@ -29,6 +31,11 @@ const chainEl = document.getElementById("chain") as HTMLDivElement;
 const resetBtn = document.getElementById("resetBtn") as HTMLButtonElement;
 const versionEl = document.getElementById("version") as HTMLElement;
 const previewEl = document.getElementById("preview") as HTMLDivElement;
+const timeBarFillEl = document.getElementById("timebar-fill") as HTMLDivElement;
+const timeBarTextEl = document.getElementById("timebar-text") as HTMLSpanElement;
+const gameOverEl = document.getElementById("gameover") as HTMLDivElement;
+const finalScoreEl = document.getElementById("finalScore") as HTMLSpanElement;
+const restartBtn = document.getElementById("restartBtn") as HTMLButtonElement;
 
 // ---- 状態 ----
 let board: (Panel | null)[] = new Array(CELL_COUNT).fill(null);
@@ -44,6 +51,9 @@ let selectedId: number | null = null;
 let isDragging = false;
 let dragCell = -1;          // ドラッグ中の保持パネルの論理セル
 let isFalling = false;      // 落下アニメ中フラグ
+let timeLeftMs = TIME_LIMIT_MS; // 残り時間
+let lastFrameTime = 0;          // 直前フレームの時刻(delta計算用)
+let gameOver = false;
 
 // ---- 座標ヘルパ ----
 const idx = (row: number, col: number): number => row * SIZE + col;
@@ -213,7 +223,7 @@ function setSelected(id: number | null): void {
 
 // ---- 入力 (マウス & タッチ) ----
 function onPointerDown(e: PointerEvent): void {
-  if (isFalling) return;
+  if (isFalling || gameOver) return;
   const { row, col } = pointerToCell(e.clientX, e.clientY);
   const cell = idx(row, col);
   const panel = board[cell];
@@ -371,9 +381,45 @@ function applyGravity(): void {
   }, FALL_MS);
 }
 
+// ---- タイムリミット ----
+function updateTimeBar(): void {
+  const ratio = Math.max(0, Math.min(1, timeLeftMs / TIME_LIMIT_MS));
+  timeBarFillEl.style.width = `${ratio * 100}%`;
+  timeBarFillEl.style.background =
+    ratio > 0.5 ? "var(--time-high)" : ratio > 0.2 ? "var(--time-mid)" : "var(--time-low)";
+  timeBarTextEl.textContent = String(Math.ceil(timeLeftMs / 1000));
+}
+
+function triggerGameOver(): void {
+  gameOver = true;
+  isDragging = false;
+  finalScoreEl.textContent = String(score);
+  gameOverEl.classList.remove("hidden");
+}
+
 // ---- アニメーションループ ----
 function tick(): void {
   const now = performance.now();
+
+  // ゲームオーバー中は時間も盤面も止める
+  if (gameOver) {
+    lastFrameTime = now;
+    requestAnimationFrame(tick);
+    return;
+  }
+
+  // 残り時間を減らす(タブ非表示などによる大ジャンプは抑制)
+  if (lastFrameTime === 0) lastFrameTime = now;
+  const dt = Math.min(now - lastFrameTime, 100);
+  lastFrameTime = now;
+  timeLeftMs -= dt;
+  if (timeLeftMs <= 0) {
+    timeLeftMs = 0;
+    updateTimeBar();
+    triggerGameOver();
+    requestAnimationFrame(tick);
+    return;
+  }
 
   const anyFading = board.some((p) => p && p.fadingSince !== null);
   if (!anyFading && !isFalling && chain !== 0) {
@@ -410,9 +456,15 @@ function tick(): void {
     scoreEl.textContent = String(score);
     chain++;
     chainEl.textContent = String(chain);
+    // パネルを消すと残り時間が回復(上限 TIME_LIMIT_MS)
+    timeLeftMs = Math.min(
+      TIME_LIMIT_MS,
+      timeLeftMs + expired.length * RECOVER_MS_PER_PANEL,
+    );
     applyGravity();
   }
 
+  updateTimeBar();
   requestAnimationFrame(tick);
 }
 
@@ -425,6 +477,11 @@ function reset(): void {
   chain = 0;
   scoreEl.textContent = "0";
   chainEl.textContent = "0";
+  timeLeftMs = TIME_LIMIT_MS;
+  lastFrameTime = 0;
+  gameOver = false;
+  gameOverEl.classList.add("hidden");
+  updateTimeBar();
   board = new Array(CELL_COUNT).fill(null);
   initBoard();
   render();
@@ -442,6 +499,7 @@ boardEl.addEventListener("pointermove", onPointerMove);
 boardEl.addEventListener("pointerup", onPointerUp);
 boardEl.addEventListener("pointercancel", onPointerUp);
 resetBtn.addEventListener("click", reset);
+restartBtn.addEventListener("click", reset);
 window.addEventListener("resize", () => {
   if (!isDragging) syncAllPositions();
 });
