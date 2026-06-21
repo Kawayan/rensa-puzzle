@@ -311,19 +311,26 @@ function followPointer(el: HTMLDivElement, clientX: number, clientY: number): vo
 function resolveMatches(): void {
   const now = performance.now();
   const comps = findComponents();
+  let newlyFading = 0;
   for (const comp of comps) {
     const panels = comp.map((i) => board[i]!);
     const hasFading = panels.some((p) => p.fadingSince !== null);
     const hasFresh = panels.some((p) => p.fadingSince === null);
     if (hasFading && hasFresh) {
       // 消えかけのパネルに同色が接触 → サイズに関わらず連結した同色を
-      // すべて巻き込んで消失させ、タイマーをリセットする
+      // すべて巻き込んで消失させ、タイマーをリセットする。
+      // 新しくフェードに加わった分だけ時間を回復する。
+      newlyFading += panels.filter((p) => p.fadingSince === null).length;
       for (const p of panels) p.fadingSince = now;
     } else if (!hasFading && comp.length >= MIN_MATCH) {
       // 新しく5個以上つながった塊 → フェード開始
+      newlyFading += comp.length;
       for (const p of panels) p.fadingSince = now;
     }
     // それ以外(全員フェード中で新規なし / 5未満で消えかけ無し)は変更しない
+  }
+  if (newlyFading > 0) {
+    timeLeftMs = Math.min(TIME_LIMIT_MS, timeLeftMs + newlyFading * RECOVER_MS_PER_PANEL);
   }
 }
 
@@ -527,11 +534,6 @@ function tick(): void {
     scoreEl.textContent = String(score);
     chain++;
     chainEl.textContent = String(chain);
-    // パネルを消すと残り時間が回復(上限 TIME_LIMIT_MS)
-    timeLeftMs = Math.min(
-      TIME_LIMIT_MS,
-      timeLeftMs + expired.length * RECOVER_MS_PER_PANEL,
-    );
     applyGravity();
   }
 
