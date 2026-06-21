@@ -529,7 +529,7 @@ function tick(): void {
       panelEls.delete(p.id);
       if (selectedId === p.id) selectedId = null;
       board[i] = null;
-      score++;
+      score += chain + 1; // chain倍率: 1連鎖目=1倍、2連鎖目=2倍…
     }
     scoreEl.textContent = String(score);
     chain++;
