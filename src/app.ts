@@ -100,6 +100,52 @@ function syncAllPositions(): void {
   }
 }
 
+// ---- サウンド (Web Audio API) ----
+let audioCtx: AudioContext | null = null;
+
+function getAudioCtx(): AudioContext {
+  if (!audioCtx) audioCtx = new AudioContext();
+  if (audioCtx.state === "suspended") void audioCtx.resume();
+  return audioCtx;
+}
+
+// 5個以上つながった時: 明るいアルペジオ。チェーン数に応じて音程上昇。
+function playMatchSound(): void {
+  const ctx = getAudioCtx();
+  const t = ctx.currentTime;
+  const pitchMult = Math.pow(1.06, chain); // チェーンごとに約1半音上昇
+  [523, 659, 784].forEach((hz, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = hz * pitchMult;
+    gain.gain.setValueAtTime(0, t + i * 0.07);
+    gain.gain.linearRampToValueAtTime(0.22, t + i * 0.07 + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.07 + 0.22);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t + i * 0.07);
+    osc.stop(t + i * 0.07 + 0.25);
+  });
+}
+
+// パネル消失時: 高音から低音へのすっきりしたスウィープ
+function playVanishSound(): void {
+  const ctx = getAudioCtx();
+  const t = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(880, t);
+  osc.frequency.exponentialRampToValueAtTime(280, t + 0.18);
+  gain.gain.setValueAtTime(0.18, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + 0.2);
+}
+
 // ---- シード付き乱数 (Mulberry32) ----
 let rng: () => number = Math.random;
 
@@ -345,6 +391,7 @@ function resolveMatches(): void {
   }
   if (newlyFading > 0) {
     timeLeftMs = Math.min(TIME_LIMIT_MS, timeLeftMs + newlyFading * RECOVER_MS_PER_PANEL);
+    playMatchSound();
   }
 }
 
@@ -548,6 +595,7 @@ function tick(): void {
     scoreEl.textContent = String(score);
     chain++;
     chainEl.textContent = String(chain);
+    playVanishSound();
     applyGravity();
   }
 
