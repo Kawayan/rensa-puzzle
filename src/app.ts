@@ -483,9 +483,12 @@ function tick(): void {
   if (timeLeftMs <= 0) {
     timeLeftMs = 0;
     updateTimeBar();
-    triggerGameOver();
-    requestAnimationFrame(tick);
-    return;
+    // フェード中パネルがある間はゲームオーバーを遅らせる
+    if (!board.some((p) => p && p.fadingSince !== null)) {
+      triggerGameOver();
+      requestAnimationFrame(tick);
+      return;
+    }
   }
 
   const anyFading = board.some((p) => p && p.fadingSince !== null);
