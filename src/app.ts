@@ -18,6 +18,7 @@ const RECOVER_MS_PER_PANEL = 500;   // パネル1枚消すごとの回復時間
 const SCORE_KEY = "puzzle-best10";  // localStorage キー
 const SPEED_RAMP_MS = 30 * 60 * 1000; // 30分で最大速度に到達
 const SPEED_RAMP_MAX = 6;              // 最大6倍速(5秒でバーが空)
+const SPEED_STEP_MS = 3 * 60 * 1000;  // 3分ごとに1ステップ上昇
 
 // ページ読み込み時刻。リセットしても持続し、プレイ時間全体で難度が上がる。
 const sessionStartTime = performance.now();
@@ -389,10 +390,12 @@ function applyGravity(): void {
 }
 
 // ---- タイムリミット ----
-// セッション経過時間に応じた速度倍率(1倍〜最大6倍)
+// セッション経過時間に応じた速度倍率(3分ごとに1ステップ、最大6倍)
 function timeSpeedRate(): number {
   const elapsed = Math.min(performance.now() - sessionStartTime, SPEED_RAMP_MS);
-  return 1 + (SPEED_RAMP_MAX - 1) * (elapsed / SPEED_RAMP_MS);
+  const totalSteps = SPEED_RAMP_MS / SPEED_STEP_MS;               // 10ステップ
+  const step = Math.floor(elapsed / SPEED_STEP_MS);               // 現在のステップ
+  return 1 + (SPEED_RAMP_MAX - 1) * (step / totalSteps);
 }
 
 function updateTimeBar(): void {
