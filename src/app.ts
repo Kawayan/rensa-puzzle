@@ -36,6 +36,7 @@ const boardEl = document.getElementById("board") as HTMLDivElement;
 const scoreEl = document.getElementById("score") as HTMLDivElement;
 const chainEl = document.getElementById("chain") as HTMLDivElement;
 const levelEl = document.getElementById("level") as HTMLDivElement;
+const seedDisplayEl = document.getElementById("seed-display") as HTMLSpanElement;
 const resetBtn = document.getElementById("resetBtn") as HTMLButtonElement;
 const versionEl = document.getElementById("version") as HTMLElement;
 const previewEl = document.getElementById("preview") as HTMLDivElement;
@@ -99,9 +100,22 @@ function syncAllPositions(): void {
   }
 }
 
+// ---- シード付き乱数 (Mulberry32) ----
+let rng: () => number = Math.random;
+
+function initRng(seed: number): void {
+  let s = seed >>> 0;
+  rng = (): number => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 0x100000000;
+  };
+}
+
 // ---- 盤面生成 ----
 function randomColor(): Color {
-  return COLORS[Math.floor(Math.random() * COLORS.length)]!;
+  return COLORS[Math.floor(rng() * COLORS.length)]!;
 }
 
 function makePanel(color: Color): Panel {
@@ -555,6 +569,12 @@ function reset(): void {
   gameOver = false;
   gameOverEl.classList.add("hidden");
   updateTimeBar();
+
+  // 新しいSeedで乱数を初期化して表示
+  const seed = (Math.random() * 0x100000000) >>> 0;
+  initRng(seed);
+  seedDisplayEl.textContent = seed.toString(16).toUpperCase().padStart(8, "0");
+
   board = new Array(CELL_COUNT).fill(null);
   initBoard();
   render();
