@@ -439,7 +439,8 @@ function tick(): void {
       // 上から徐々に色が抜けていき、残った色が下端まで減ると消失する
       const prog = Math.min(elapsed / FADE_MS, 1);
       const pct = (prog * 100).toFixed(1);
-      el.style.background = `linear-gradient(to bottom, transparent ${pct}%, var(--c-${p.color}) ${pct}%)`;
+      const light = `color-mix(in srgb, var(--c-${p.color}) 25%, white)`;
+      el.style.background = `linear-gradient(to bottom, ${light} ${pct}%, var(--c-${p.color}) ${pct}%)`;
     }
   }
 
