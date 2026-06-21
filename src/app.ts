@@ -144,10 +144,14 @@ function initBoard(): void {
 }
 
 // ---- 描画 ----
-function createPanelEl(panel: Panel): HTMLDivElement {
+// パネル要素を生成する。DOMへ追加する前に初期 transform を確定させることで、
+// 追加直後の原点(左上)がトランジションの起点として残るのを防ぐ(斜め落下対策)。
+function createPanelEl(panel: Panel, transform: string): HTMLDivElement {
   const el = document.createElement("div");
   el.className = `panel color-${panel.color}`;
   el.dataset["id"] = String(panel.id);
+  el.style.opacity = "1";
+  el.style.transform = transform;
   boardEl.appendChild(el);
   panelEls.set(panel.id, el);
   return el;
@@ -178,9 +182,7 @@ function render(): void {
   for (let i = 0; i < CELL_COUNT; i++) {
     const p = board[i];
     if (!p) continue;
-    const el = createPanelEl(p);
-    el.style.transform = cellTransform(rowOf(i), colOf(i));
-    el.style.opacity = "1";
+    createPanelEl(p, cellTransform(rowOf(i), colOf(i)));
   }
 }
 
@@ -307,6 +309,7 @@ function resolveMatches(): void {
 
 // ---- 重力・補充 (仕様4) ----
 function applyGravity(): void {
+  const affectedCols: number[] = [];
   for (let col = 0; col < SIZE; col++) {
     const survivors: Panel[] = [];
     for (let row = 0; row < SIZE; row++) {
@@ -315,6 +318,7 @@ function applyGravity(): void {
     }
     const emptyCount = SIZE - survivors.length;
     if (emptyCount === 0) continue;
+    affectedCols.push(col);
 
     const newPanels: Panel[] = [];
     for (let k = 0; k < emptyCount; k++) {
@@ -329,28 +333,35 @@ function applyGravity(): void {
     for (let row = 0; row < SIZE; row++) {
       const panel = column[row]!;
       board[idx(row, col)] = panel;
-      let el = panelEls.get(panel.id);
+      const el = panelEls.get(panel.id);
       if (!el) {
-        // 新規パネルは盤面の上(画面外)から落とす
-        el = createPanelEl(panel);
+        // 新規パネルは盤面の上(画面外)の開始位置で生成する。
+        // createPanelEl が append 前に transform を設定するので、左上からの斜め移動にならない。
         const startRow = row - emptyCount; // 負の行 = 上方
-        el.style.opacity = "1";
-        el.style.transform = cellTransform(startRow, col);
+        createPanelEl(panel, cellTransform(startRow, col));
+      } else {
+        // survivor は現在位置のまま。falling はこの後まとめて付ける
+        el.classList.remove("selected");
       }
-      el.classList.add("falling");
-      el.classList.remove("selected");
     }
   }
 
-  // 次フレームで目標位置へ移動させて落下アニメ発火
-  requestAnimationFrame(() => {
-    for (let i = 0; i < CELL_COUNT; i++) {
-      const p = board[i];
+  if (affectedCols.length === 0) return;
+
+  // 開始位置をブラウザに確定させてから(リフロー強制)目標位置へ遷移させる。
+  // これをしないとトランジションが原点(左上)から斜めに走り、左右に流れて見える。
+  void boardEl.offsetHeight;
+
+  for (const col of affectedCols) {
+    for (let row = 0; row < SIZE; row++) {
+      const p = board[idx(row, col)];
       if (!p) continue;
       const el = panelEls.get(p.id);
-      if (el) el.style.transform = cellTransform(rowOf(i), colOf(i));
+      if (!el) continue;
+      el.classList.add("falling"); // 上→下の落下アニメを有効化
+      el.style.transform = cellTransform(row, col);
     }
-  });
+  }
 
   isFalling = true;
   window.setTimeout(() => {
