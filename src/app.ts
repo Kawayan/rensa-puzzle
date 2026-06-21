@@ -28,6 +28,7 @@ const scoreEl = document.getElementById("score") as HTMLDivElement;
 const chainEl = document.getElementById("chain") as HTMLDivElement;
 const resetBtn = document.getElementById("resetBtn") as HTMLButtonElement;
 const versionEl = document.getElementById("version") as HTMLElement;
+const previewEl = document.getElementById("preview") as HTMLDivElement;
 
 // ---- 状態 ----
 let board: (Panel | null)[] = new Array(CELL_COUNT).fill(null);
@@ -35,6 +36,9 @@ const panelEls = new Map<number, HTMLDivElement>();
 let nextId = 1;
 let score = 0;
 let chain = 0;
+
+let nextColors: Color[] = [];            // 各列の次に落ちてくる色
+const previewEls: HTMLDivElement[] = []; // プレビュー行のセル(列順)
 
 let selectedId: number | null = null;
 let isDragging = false;
@@ -147,6 +151,25 @@ function createPanelEl(panel: Panel): HTMLDivElement {
   boardEl.appendChild(el);
   panelEls.set(panel.id, el);
   return el;
+}
+
+// 次に落ちてくる色のプレビュー行を描画
+function renderPreview(): void {
+  previewEl.innerHTML = "";
+  previewEls.length = 0;
+  for (let col = 0; col < SIZE; col++) {
+    const cell = document.createElement("div");
+    cell.className = `preview-cell color-${nextColors[col]!}`;
+    previewEl.appendChild(cell);
+    previewEls.push(cell);
+  }
+}
+
+// 指定列の次色を更新(状態とプレビュー表示の両方)
+function setNextColor(col: number, color: Color): void {
+  nextColors[col] = color;
+  const cell = previewEls[col];
+  if (cell) cell.className = `preview-cell color-${color}`;
 }
 
 function render(): void {
@@ -294,7 +317,13 @@ function applyGravity(): void {
     if (emptyCount === 0) continue;
 
     const newPanels: Panel[] = [];
-    for (let k = 0; k < emptyCount; k++) newPanels.push(makePanel(randomColor()));
+    for (let k = 0; k < emptyCount; k++) {
+      // 一番下に積まれる(最初に落ちてくる)パネルはプレビューの色を使う
+      const color = k === emptyCount - 1 ? nextColors[col]! : randomColor();
+      newPanels.push(makePanel(color));
+    }
+    // プレビュー色を消費したので次色を補充し、表示を更新する
+    setNextColor(col, randomColor());
     const column = [...newPanels, ...survivors]; // 上から並ぶ
 
     for (let row = 0; row < SIZE; row++) {
@@ -388,6 +417,8 @@ function reset(): void {
   board = new Array(CELL_COUNT).fill(null);
   initBoard();
   render();
+  nextColors = Array.from({ length: SIZE }, () => randomColor());
+  renderPreview();
   // 中央パネルを初期選択
   const center = board[idx(Math.floor(SIZE / 2), Math.floor(SIZE / 2))];
   if (center) setSelected(center.id);
