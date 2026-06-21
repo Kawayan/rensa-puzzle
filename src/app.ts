@@ -35,6 +35,7 @@ interface Panel {
 const boardEl = document.getElementById("board") as HTMLDivElement;
 const scoreEl = document.getElementById("score") as HTMLDivElement;
 const chainEl = document.getElementById("chain") as HTMLDivElement;
+const levelEl = document.getElementById("level") as HTMLDivElement;
 const resetBtn = document.getElementById("resetBtn") as HTMLButtonElement;
 const versionEl = document.getElementById("version") as HTMLElement;
 const previewEl = document.getElementById("preview") as HTMLDivElement;
@@ -62,6 +63,7 @@ let isFalling = false;      // 落下アニメ中フラグ
 let timeLeftMs = TIME_LIMIT_MS; // 残り時間
 let lastFrameTime = 0;          // 直前フレームの時刻(delta計算用)
 let gameOver = false;
+let lastSpeedStep = 0;          // 前フレームの速度ステップ(レベル更新検知用)
 
 // ---- 座標ヘルパ ----
 const idx = (row: number, col: number): number => row * SIZE + col;
@@ -471,6 +473,13 @@ function tick(): void {
   const dt = Math.min(now - lastFrameTime, 100);
   lastFrameTime = now;
   timeLeftMs -= dt * timeSpeedRate();
+
+  // 速度ステップが上がったらレベル表示を更新
+  const step = Math.floor(Math.min(now - sessionStartTime, SPEED_RAMP_MS) / SPEED_STEP_MS);
+  if (step !== lastSpeedStep) {
+    lastSpeedStep = step;
+    levelEl.textContent = String(step + 1);
+  }
   if (timeLeftMs <= 0) {
     timeLeftMs = 0;
     updateTimeBar();
