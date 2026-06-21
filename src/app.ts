@@ -20,8 +20,8 @@ const SPEED_RAMP_MS = 30 * 60 * 1000; // 30分で最大速度に到達
 const SPEED_RAMP_MAX = 6;              // 最大6倍速(5秒でバーが空)
 const SPEED_STEP_MS = 3 * 60 * 1000;  // 3分ごとに1ステップ上昇
 
-// ページ読み込み時刻。リセットしても持続し、プレイ時間全体で難度が上がる。
-const sessionStartTime = performance.now();
+// ゲーム開始時刻。リセット時に更新し、LEVELと速度倍率を1に戻す。
+let sessionStartTime = performance.now();
 
 type Color = (typeof COLORS)[number];
 
@@ -617,6 +617,9 @@ function reset(): void {
   gameOver = false;
   gameOverEl.classList.add("hidden");
   updateTimeBar();
+  sessionStartTime = performance.now();
+  lastSpeedStep = 0;
+  levelEl.textContent = "1";
 
   // 新しいSeedで乱数を初期化して表示
   const seed = (Math.random() * 0x100000000) >>> 0;
