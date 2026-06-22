@@ -10,13 +10,15 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "watch": "tsc -w",
-    "start": "lite-server"
+    "start": "lite-server",
+    "gif": "node scripts/make-gif.mjs"
   },
   "engines": {
     "node": ">=18.12.0"
   },
   "devDependencies": {
     "lite-server": "^2.6.1",
+    "playwright": "^1.49.0",
     "typescript": "^6.0.3"
   }
 }
