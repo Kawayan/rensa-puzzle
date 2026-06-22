@@ -1,6 +1,9 @@
 # RENSA!
 
-8×8 マスのカラーパネルを動かして、同じ色をつなげて消すパズルゲームです。
+8×8 マスのカラーパネルを動かして、同じ色をつなげて消すパズルゲームです。  
+以下のURLからすぐに遊べます。  
+👉 [https://kawayan.github.io/rensa-puzzle/](https://kawayan.github.io/rensa-puzzle/)
+![サンプルプレイ](docs/sample.gif)
 
 ## 遊び方
 

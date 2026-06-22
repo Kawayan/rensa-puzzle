@@ -21,7 +21,7 @@
 
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
-import { readFile, rename } from 'node:fs/promises';
+import { readFile, rename, copyFile } from 'node:fs/promises';
 import { mkdirSync } from 'node:fs';
 import { extname, join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -210,7 +210,12 @@ async function main() {
   );
 
   if (result.status === 0) {
+    // docs/ にもコピーして README から参照できるようにする
+    const docsGif = join(ROOT, 'docs', 'sample.gif');
+    mkdirSync(join(ROOT, 'docs'), { recursive: true });
+    await copyFile(OUT_GIF, docsGif);
     console.log(`\n✓ GIF 保存: ${OUT_GIF}`);
+    console.log(`✓ docs へコピー: ${docsGif}`);
   } else {
     console.log('');
     console.log('⚠ ffmpeg が見つかりません。インストール後に再実行してください:');
