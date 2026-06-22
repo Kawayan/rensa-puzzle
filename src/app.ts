@@ -337,6 +337,7 @@ function onPointerMove(e: PointerEvent): void {
   targetEl.classList.remove("falling");
   targetEl.style.transform = cellTransform(rowOf(dragCell), colOf(dragCell));
   dragCell = newCell;
+  resolveMatches();
 }
 
 function onPointerUp(e: PointerEvent): void {
