@@ -291,12 +291,13 @@ main {
 }
 
 #scoreList {
-  margin: 0;
+  margin: 0 auto;
   padding: 0;
   list-style: none;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 3px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: fit-content;
 }
 
 #scoreList li {
