@@ -38,6 +38,7 @@ const gameOverEl = document.getElementById("gameover") as HTMLDivElement;
 const finalScoreEl = document.getElementById("finalScore") as HTMLSpanElement;
 const scoreListEl = document.getElementById("scoreList") as HTMLOListElement;
 const restartBtn = document.getElementById("restartBtn") as HTMLButtonElement;
+const chainMilestoneEl = document.getElementById("chain-milestone") as HTMLDivElement;
 
 // ---- 状態 ----
 let board: (Panel | null)[] = new Array(CELL_COUNT).fill(null);
@@ -132,6 +133,14 @@ function playMatchSound(): void {
     osc.start(t + i * 0.07);
     osc.stop(t + i * 0.07 + 0.25);
   });
+}
+
+// 50チェーン達成時のオーバーレイ表示(3秒、CSSアニメーションで自動フェード)
+function showChainMilestone(chainCount: number): void {
+  chainMilestoneEl.textContent = `CHAIN ${chainCount}!!`;
+  chainMilestoneEl.classList.remove("show");
+  void chainMilestoneEl.offsetWidth; // アニメーションをリセットするためのreflow
+  chainMilestoneEl.classList.add("show");
 }
 
 // パネル消失時: 高音から低音へのすっきりしたスウィープ
@@ -601,6 +610,7 @@ function tick(): void {
     scoreEl.textContent = String(score);
     chain++;
     chainEl.textContent = String(chain);
+    if (chain % 50 === 0) showChainMilestone(chain);
     playVanishSound();
     applyGravity();
   }

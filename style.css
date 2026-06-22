@@ -204,6 +204,36 @@ main {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
+/* ---- Chain milestone overlay ---- */
+#chain-milestone {
+  position: fixed;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px);
+  background: rgba(99, 102, 241, 0.82);
+  color: #fff;
+  padding: 5px 20px;
+  border-radius: 20px;
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0;
+  white-space: nowrap;
+}
+
+#chain-milestone.show {
+  animation: milestone-pop 3s ease forwards;
+}
+
+@keyframes milestone-pop {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  12%  { opacity: 0.9; transform: translateX(-50%) translateY(0); }
+  75%  { opacity: 0.9; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+}
+
 /* ---- Game over overlay ---- */
 #gameover {
   position: fixed;
