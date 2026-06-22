@@ -613,7 +613,13 @@ function tick(): void {
       const el = panelEls.get(p.id);
       if (el) el.remove();
       panelEls.delete(p.id);
-      if (selectedId === p.id) selectedId = null;
+      if (selectedId === p.id) {
+        selectedId = null;
+        if (isDragging) {
+          isDragging = false;
+          document.body.style.cursor = "";
+        }
+      }
       board[i] = null;
       score += chain + 1; // chain倍率: 1連鎖目=1倍、2連鎖目=2倍…
     }
