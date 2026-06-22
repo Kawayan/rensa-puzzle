@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="style.css" />
-  <title>カラーパズル</title>
+  <title>RENSA!</title>
 </head>
 <body>
   <div class="app-header">
-    <h1>カラーパズル <small id="version"></small></h1>
+    <h1>RENSA!  <small id="version"></small></h1>
     <p class="seed-label">SEED: <span id="seed-display">--------</span></p>
   </div>
 
@@ -34,13 +34,13 @@
   </header>
 
   <main>
+    <p class="hint">
+      パネルを<kbd>ドラッグ</kbd>して動かそう &nbsp;·&nbsp; 同じ色を <strong>5個以上</strong> つなげると消えるよ。
+    </p>
     <div id="timebar" aria-label="残り時間">
       <div id="timebar-fill"></div>
       <span id="timebar-text">30</span>
     </div>
-    <p class="hint">
-      パネルを<kbd>ドラッグ</kbd>して動かそう &nbsp;·&nbsp; 同じ色を <strong>5個以上</strong> つなげると消える
-    </p>
     <div id="preview" aria-hidden="true"></div>
     <div id="board" aria-label="パズル盤面"></div>
   </main>

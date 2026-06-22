@@ -1,11 +1,3 @@
-// ===== カラーパズル (7x7) =====
-// 仕様:
-//  - 7x7 を色付きパネルで埋める
-//  - パネルをドラッグで動かす(通過したパネルと順次入れ替わる / パズドラ方式)
-//  - 同色を上下左右に5個以上つなぐと、徐々に薄くなり3秒後に消える
-//  - 消えた場所に上から新しいパネルが降ってくる
-//  - 消えかけの塊に同色をつなぐと消失タイマーがリセットされる
-
 const VERSION = "1.0.0";
 const SIZE = 8;
 const CELL_COUNT = SIZE * SIZE;
@@ -18,7 +10,7 @@ const RECOVER_MS_PER_PANEL = 500;   // パネル1枚消すごとの回復時間
 const SCORE_KEY = "puzzle-best10";  // localStorage キー
 const SPEED_RAMP_MS = 30 * 60 * 1000; // 30分で最大速度に到達
 const SPEED_RAMP_MAX = 6;              // 最大6倍速(5秒でバーが空)
-const SPEED_STEP_MS = 1 * 60 * 1000;
+const SPEED_STEP_MS = 10 * 1000;
 
 // ゲーム開始時刻。リセット時に更新し、LEVELと速度倍率を1に戻す。
 let sessionStartTime = performance.now();
