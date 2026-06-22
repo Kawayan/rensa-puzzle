@@ -1,16 +1,16 @@
 const VERSION = "1.0.0";
 const SIZE = 8;
 const CELL_COUNT = SIZE * SIZE;
-const COLORS = ["red", "blue", "green", "yellow", "purple"] as const;
-const MIN_MATCH = 5;
-const FADE_MS = 2500;        // 消えるまでの時間
-const FALL_MS = 300;         // 落下アニメ時間(CSS .falling と合わせる)
-const TIME_LIMIT_MS = 30000;        // タイムリミット(30秒)
-const RECOVER_MS_PER_PANEL = 500;   // パネル1枚消すごとの回復時間
 const SCORE_KEY = "puzzle-best10";  // localStorage キー
-const SPEED_RAMP_MS = 30 * 60 * 1000; // 30分で最大速度に到達
-const SPEED_RAMP_MAX = 6;              // 最大6倍速(5秒でバーが空)
-const SPEED_STEP_MS = 10 * 1000;
+const COLORS = ["red", "blue", "green", "yellow", "purple"] as const;
+const MIN_MATCH = 5;        // 消えるまでに必要な個数
+const FADE_MS = 2500;       // 消えるまでの時間
+const FALL_MS = 300;        // 落下アニメ時間(CSS .falling と合わせる)
+const TIME_LIMIT_MS = 30000;          // タイムリミット
+const RECOVER_MS_PER_PANEL = 500;     // パネル1枚消すごとの回復時間
+const SPEED_RAMP_MS = 15 * 60 * 1000; // 最高速度に到達するまでの時間
+const SPEED_RAMP_MAX = 6;             // 最大速度倍率
+const SPEED_STEP_MS = 10 * 1000;      // レベルアップ（速度アップ）までの時間
 
 // ゲーム開始時刻。リセット時に更新し、LEVELと速度倍率を1に戻す。
 let sessionStartTime = performance.now();
