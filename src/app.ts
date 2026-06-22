@@ -444,7 +444,9 @@ function applyGravity(): void {
         createPanelEl(panel, cellTransform(startRow, col));
       } else {
         // survivor は現在位置のまま。falling はこの後まとめて付ける
-        el.classList.remove("selected");
+        if (!(isDragging && panel.id === selectedId)) {
+          el.classList.remove("selected");
+        }
       }
     }
   }
@@ -461,6 +463,12 @@ function applyGravity(): void {
       if (!p) continue;
       const el = panelEls.get(p.id);
       if (!el) continue;
+      if (isDragging && p.id === selectedId) {
+        // ドラッグ中パネルは落下アニメをスキップし、dragCell だけ新位置に更新する。
+        // これをしないと onPointerUp が古い dragCell で要素を誤配置し黒背景が残る。
+        dragCell = idx(row, col);
+        continue;
+      }
       el.classList.add("falling"); // 上→下の落下アニメを有効化
       el.style.transform = cellTransform(row, col);
     }
