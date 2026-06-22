@@ -324,6 +324,7 @@ function onPointerDown(e: PointerEvent): void {
 
   const el = panelEls.get(panel.id)!;
   el.classList.add("dragging");
+  document.body.style.cursor = "grabbing";
   followPointer(el, e.clientX, e.clientY);
   e.preventDefault();
 }
@@ -357,6 +358,7 @@ function onPointerMove(e: PointerEvent): void {
 function onPointerUp(e: PointerEvent): void {
   if (!isDragging) return;
   isDragging = false;
+  document.body.style.cursor = "";
   if (selectedId !== null) {
     const el = panelEls.get(selectedId);
     if (el) {
