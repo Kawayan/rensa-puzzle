@@ -101,15 +101,28 @@ function getAudioCtx(): AudioContext {
   return audioCtx;
 }
 
-// 5個以上つながった時: 明るいアルペジオ。チェーン数に応じて音程上昇。
+// 5個以上つながった時: 明るいアルペジオ。
+// 50チェーンごとに和音と音色を切り替え。tier内は最大30%の音程上昇に抑える。
 function playMatchSound(): void {
   const ctx = getAudioCtx();
   const t = ctx.currentTime;
-  const pitchMult = Math.pow(1.06, chain); // チェーンごとに約1半音上昇
-  [523, 659, 784].forEach((hz, i) => {
+
+  const tier = Math.floor(chain / 50);
+  const withinTier = chain % 50;
+  const pitchMult = 1 + (withinTier / 50) * 0.3; // tier内で最大30%上昇
+
+  const tiers: { freqs: [number, number, number]; type: OscillatorType }[] = [
+    { freqs: [523, 659, 784], type: "triangle" }, // C major  (やわらかい)
+    { freqs: [349, 440, 523], type: "sine" },     // F major  (まろやか・低め)
+    { freqs: [392, 494, 587], type: "triangle" }, // G major  (明るい)
+    { freqs: [440, 554, 659], type: "sine" },     // A major  (きらびやか)
+  ];
+  const { freqs, type } = tiers[tier % tiers.length]!;
+
+  freqs.forEach((hz, i) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = "triangle";
+    osc.type = type;
     osc.frequency.value = hz * pitchMult;
     gain.gain.setValueAtTime(0, t + i * 0.07);
     gain.gain.linearRampToValueAtTime(0.22, t + i * 0.07 + 0.01);
