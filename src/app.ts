@@ -62,7 +62,7 @@ import { initRng, randomColor } from "./rng.js";
 import { playMatchSound, playVanishSound } from "./sound.js";
 import { saveBest10 } from "./storage.js";
 import type { ScoreEntry } from "./storage.js";
-import { populateBgmSelect, playBgm } from "./bgm.js";
+import { populateBgmSelect, playBgm, stopBgm } from "./bgm.js";
 
 // ---- 状態 ----
 let board: (Panel | null)[] = new Array(CELL_COUNT).fill(null);
@@ -82,6 +82,7 @@ let isFalling = false;      // 落下アニメ中フラグ
 let timeLeftMs = TIME_LIMIT_MS; // 残り時間
 let lastFrameTime = 0;          // 直前フレームの時刻(delta計算用)
 let gameOver = false;
+let running = false;            // ゲームループ稼働中フラグ(スタート画面表示中はfalse)
 let lastSpeedStep = 0;          // 前フレームの速度ステップ(レベル更新検知用)
 
 // ゲーム開始時刻。リセット時に更新し、LEVELと速度倍率を1に戻す。
@@ -460,6 +461,8 @@ function triggerGameOver(): void {
 
 // ---- アニメーションループ ----
 function tick(): void {
+  // スタート画面表示中などループ停止要求があれば再スケジュールせず終了
+  if (!running) return;
   const now = performance.now();
 
   // ゲームオーバー中は時間も盤面も止める
@@ -593,8 +596,26 @@ boardEl.addEventListener("pointerdown", onPointerDown);
 boardEl.addEventListener("pointermove", onPointerMove);
 boardEl.addEventListener("pointerup", onPointerUp);
 boardEl.addEventListener("pointercancel", onPointerUp);
-resetBtn.addEventListener("click", reset);
-restartBtn.addEventListener("click", reset);
+// ループを止めてスタート画面へ戻る(リスタートボタン)
+function showStartScreen(): void {
+  running = false; // tickループを停止
+  stopBgm();
+  startscreenEl.classList.remove("hidden");
+}
+
+// スタート画面からゲームを開始する
+function startGame(): void {
+  startscreenEl.classList.add("hidden");
+  playBgm(bgmSelectEl.value); // ユーザー操作直後なので自動再生がブロックされない
+  reset();
+  if (!running) {
+    running = true;
+    requestAnimationFrame(tick);
+  }
+}
+
+resetBtn.addEventListener("click", showStartScreen);
+restartBtn.addEventListener("click", showStartScreen);
 window.addEventListener("resize", () => {
   if (!isDragging) syncAllPositions();
 });
@@ -602,10 +623,4 @@ window.addEventListener("resize", () => {
 // スタート画面の BGM コンボボックスを構築
 void populateBgmSelect(bgmSelectEl);
 
-startBtn.addEventListener("click", () => {
-  startscreenEl.classList.add("hidden");
-  // ユーザー操作直後なので自動再生がブロックされない
-  playBgm(bgmSelectEl.value);
-  reset();
-  requestAnimationFrame(tick);
-});
+startBtn.addEventListener("click", startGame);
