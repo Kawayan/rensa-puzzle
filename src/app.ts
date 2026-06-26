@@ -623,4 +623,9 @@ window.addEventListener("resize", () => {
 // スタート画面の BGM コンボボックスを構築
 void populateBgmSelect(bgmSelectEl);
 
+// スタート画面でBGMを選択したら即プレビュー再生する
+bgmSelectEl.addEventListener("change", () => {
+  playBgm(bgmSelectEl.value);
+});
+
 startBtn.addEventListener("click", startGame);
