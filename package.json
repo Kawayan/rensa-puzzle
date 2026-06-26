@@ -8,9 +8,10 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
+    "build": "node scripts/gen-bgm-list.mjs && tsc",
     "watch": "tsc -w",
     "start": "lite-server",
+    "bgm-list": "node scripts/gen-bgm-list.mjs",
     "gif": "node scripts/make-gif.mjs"
   },
   "engines": {

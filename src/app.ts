@@ -46,6 +46,7 @@ import {
   chainMilestoneEl,
   startscreenEl,
   startBtn,
+  bgmSelectEl,
   playtimeEl,
 } from "./dom.js";
 import {
@@ -61,6 +62,7 @@ import { initRng, randomColor } from "./rng.js";
 import { playMatchSound, playVanishSound } from "./sound.js";
 import { saveBest10 } from "./storage.js";
 import type { ScoreEntry } from "./storage.js";
+import { populateBgmSelect, playBgm } from "./bgm.js";
 
 // ---- 状態 ----
 let board: (Panel | null)[] = new Array(CELL_COUNT).fill(null);
@@ -597,8 +599,13 @@ window.addEventListener("resize", () => {
   if (!isDragging) syncAllPositions();
 });
 
+// スタート画面の BGM コンボボックスを構築
+void populateBgmSelect(bgmSelectEl);
+
 startBtn.addEventListener("click", () => {
   startscreenEl.classList.add("hidden");
+  // ユーザー操作直後なので自動再生がブロックされない
+  playBgm(bgmSelectEl.value);
   reset();
   requestAnimationFrame(tick);
 });

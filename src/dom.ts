@@ -19,4 +19,5 @@ export const restartBtn = document.getElementById("restartBtn") as HTMLButtonEle
 export const chainMilestoneEl = document.getElementById("chain-milestone") as HTMLDivElement;
 export const startscreenEl = document.getElementById("startscreen") as HTMLDivElement;
 export const startBtn = document.getElementById("startBtn") as HTMLButtonElement;
+export const bgmSelectEl = document.getElementById("bgm-select") as HTMLSelectElement;
 export const playtimeEl = document.getElementById("playtime") as HTMLDivElement;
