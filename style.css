@@ -114,11 +114,19 @@ header {
 }
 
 #score,
-#chain {
+#chain,
+#playtime {
   font-size: 1.2rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: var(--text);
+}
+
+#playtime small {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 1px;
 }
 
 #resetBtn {

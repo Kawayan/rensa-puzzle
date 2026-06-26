@@ -41,6 +41,7 @@ const restartBtn = document.getElementById("restartBtn") as HTMLButtonElement;
 const chainMilestoneEl = document.getElementById("chain-milestone") as HTMLDivElement;
 const startscreenEl = document.getElementById("startscreen") as HTMLDivElement;
 const startBtn = document.getElementById("startBtn") as HTMLButtonElement;
+const playtimeEl = document.getElementById("playtime") as HTMLDivElement;
 
 // ---- 状態 ----
 let board: (Panel | null)[] = new Array(CELL_COUNT).fill(null);
@@ -575,6 +576,10 @@ function tick(): void {
     lastSpeedStep = step;
     levelEl.textContent = String(step + 1);
   }
+
+  // プレイ時間を秒で更新
+  const elapsedSec = Math.floor((now - sessionStartTime) / 1000);
+  playtimeEl.innerHTML = `${elapsedSec}<small>s</small>`;
   if (timeLeftMs <= 0) {
     timeLeftMs = 0;
     updateTimeBar();
