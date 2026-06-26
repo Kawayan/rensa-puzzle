@@ -176,6 +176,13 @@ function initRng(seed: number): void {
   };
 }
 
+// チェイン数に応じたフェード時間を返す。
+// chain=0 → FADE_MS(2350ms)、chain=200 → 1800ms。10チェインごとに段階的に短縮。
+function currentFadeMs(): number {
+  const steps = Math.min(Math.floor(chain / 10), 20);
+  return Math.round(FADE_MS - steps * (FADE_MS - 1800) / 20);
+}
+
 // ---- 盤面生成 ----
 function randomColor(): Color {
   return COLORS[Math.floor(rng() * COLORS.length)]!;
@@ -603,11 +610,12 @@ function tick(): void {
     if (!p || p.fadingSince === null) continue;
     const elapsed = now - p.fadingSince;
     const el = panelEls.get(p.id);
-    if (elapsed >= FADE_MS) {
+    const fadeMs = currentFadeMs();
+    if (elapsed >= fadeMs) {
       expired.push(i);
     } else if (el) {
       // 上から徐々に色が抜けていき、残った色が下端まで減ると消失する
-      const prog = Math.min(elapsed / FADE_MS, 1);
+      const prog = Math.min(elapsed / fadeMs, 1);
       const pct = (prog * 100).toFixed(1);
       const light = `color-mix(in srgb, var(--c-${p.color}) 25%, white)`;
       el.style.background = `linear-gradient(to bottom, ${light} ${pct}%, var(--c-${p.color}) ${pct}%)`;
