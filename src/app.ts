@@ -39,6 +39,8 @@ const finalScoreEl = document.getElementById("finalScore") as HTMLSpanElement;
 const scoreListEl = document.getElementById("scoreList") as HTMLOListElement;
 const restartBtn = document.getElementById("restartBtn") as HTMLButtonElement;
 const chainMilestoneEl = document.getElementById("chain-milestone") as HTMLDivElement;
+const startscreenEl = document.getElementById("startscreen") as HTMLDivElement;
+const startBtn = document.getElementById("startBtn") as HTMLButtonElement;
 
 // ---- 状態 ----
 let board: (Panel | null)[] = new Array(CELL_COUNT).fill(null);
@@ -680,5 +682,8 @@ window.addEventListener("resize", () => {
   if (!isDragging) syncAllPositions();
 });
 
-reset();
-requestAnimationFrame(tick);
+startBtn.addEventListener("click", () => {
+  startscreenEl.classList.add("hidden");
+  reset();
+  requestAnimationFrame(tick);
+});
