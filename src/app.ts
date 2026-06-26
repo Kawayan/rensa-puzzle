@@ -225,7 +225,9 @@ function setSelected(id: number | null): void {
 
 // ---- 入力 (マウス & タッチ) ----
 function onPointerDown(e: PointerEvent): void {
-  if (isFalling || gameOver) return;
+  // 落下アニメ中(isFalling)でも掴めるようにする。board[] は重力処理後に確定済みで
+  // 視覚位置だけがアニメ中なので、論理的には掴んで問題ない。
+  if (gameOver) return;
   const { row, col } = pointerToCell(e.clientX, e.clientY);
   const cell = idx(row, col);
   const panel = board[cell];
@@ -241,6 +243,7 @@ function onPointerDown(e: PointerEvent): void {
   }
 
   const el = panelEls.get(panel.id)!;
+  el.classList.remove("falling"); // 落下トランジションを切り、掴んだ瞬間に指へ追従させる
   el.classList.add("dragging");
   document.body.style.cursor = "grabbing";
   followPointer(el, e.clientX, e.clientY);
