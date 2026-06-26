@@ -31,6 +31,7 @@ import {
   boardEl,
   scoreEl,
   chainEl,
+  maxchainEl,
   levelEl,
   seedDisplayEl,
   resetBtn,
@@ -59,6 +60,7 @@ import {
 import { initRng, randomColor } from "./rng.js";
 import { playMatchSound, playVanishSound } from "./sound.js";
 import { saveBest10 } from "./storage.js";
+import type { ScoreEntry } from "./storage.js";
 
 // ---- 状態 ----
 let board: (Panel | null)[] = new Array(CELL_COUNT).fill(null);
@@ -66,6 +68,7 @@ const panelEls = new Map<number, HTMLDivElement>();
 let nextId = 1;
 let score = 0;
 let chain = 0;
+let maxChain = 0; // セッション中の最大チェイン数
 
 let nextColors: Color[] = [];            // 各列の次に落ちてくる色
 const previewEls: HTMLDivElement[] = []; // プレビュー行のセル(列順)
@@ -426,13 +429,16 @@ function updateTimeBar(): void {
 }
 
 // ---- ゲームオーバー ----
-function renderScoreRanking(scores: number[], currentScore: number): void {
+function renderScoreRanking(entries: ScoreEntry[], current: ScoreEntry): void {
   scoreListEl.innerHTML = "";
   let highlighted = false;
-  for (const s of scores) {
+  for (const e of entries) {
     const li = document.createElement("li");
-    li.textContent = String(s);
-    if (!highlighted && s === currentScore) {
+    li.innerHTML =
+      `<span class="rank-score">${e.score}</span>` +
+      `<span class="rank-chain">${e.maxChain} chain</span>`;
+    // 今回の結果(スコアと最大チェインが一致する最初の行)を強調
+    if (!highlighted && e.score === current.score && e.maxChain === current.maxChain) {
       li.classList.add("rank-current");
       highlighted = true;
     }
@@ -444,8 +450,9 @@ function triggerGameOver(): void {
   gameOver = true;
   isDragging = false;
   finalScoreEl.textContent = String(score);
-  const top10 = saveBest10(score);
-  renderScoreRanking(top10, score);
+  const current: ScoreEntry = { score, maxChain };
+  const top10 = saveBest10(current);
+  renderScoreRanking(top10, current);
   gameOverEl.classList.remove("hidden");
 }
 
@@ -530,6 +537,10 @@ function tick(): void {
     scoreEl.textContent = String(score);
     chain++;
     chainEl.textContent = String(chain);
+    if (chain > maxChain) {
+      maxChain = chain;
+      maxchainEl.textContent = String(maxChain);
+    }
     if (chain % MILESTONE_CHAIN_INTERVAL === 0) showChainMilestone(chain);
     playVanishSound();
     applyGravity();
@@ -546,8 +557,10 @@ function reset(): void {
   selectedId = null;
   score = 0;
   chain = 0;
+  maxChain = 0;
   scoreEl.textContent = "0";
   chainEl.textContent = "0";
+  maxchainEl.textContent = "0";
   timeLeftMs = TIME_LIMIT_MS;
   lastFrameTime = 0;
   gameOver = false;

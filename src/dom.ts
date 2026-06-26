@@ -4,6 +4,7 @@
 export const boardEl = document.getElementById("board") as HTMLDivElement;
 export const scoreEl = document.getElementById("score") as HTMLDivElement;
 export const chainEl = document.getElementById("chain") as HTMLDivElement;
+export const maxchainEl = document.getElementById("maxchain") as HTMLDivElement;
 export const levelEl = document.getElementById("level") as HTMLDivElement;
 export const seedDisplayEl = document.getElementById("seed-display") as HTMLSpanElement;
 export const resetBtn = document.getElementById("resetBtn") as HTMLButtonElement;

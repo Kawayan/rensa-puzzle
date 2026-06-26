@@ -1,7 +1,7 @@
 // ゲーム全体で共有する定数と基本型。
 // このモジュールは他に依存しない(依存グラフの末端)。
 
-export const VERSION = "1.0.0";
+export const VERSION = "1.0.1";
 
 export const SIZE = 8;
 export const CELL_COUNT = SIZE * SIZE;

@@ -115,6 +115,7 @@ header {
 
 #score,
 #chain,
+#maxchain,
 #playtime {
   font-size: 1.2rem;
   font-weight: 800;
@@ -331,9 +332,31 @@ main {
   counter-reset: rank;
 }
 
+#scoreList .rank-score {
+  min-width: 64px;
+  text-align: right;
+  font-weight: 700;
+  color: var(--text);
+}
+
+#scoreList .rank-chain {
+  min-width: 64px;
+  text-align: right;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
 #scoreList li.rank-current {
   color: var(--primary-dark);
   font-weight: 800;
+}
+
+#scoreList li.rank-current .rank-score {
+  color: var(--primary-dark);
+}
+
+#scoreList li.rank-current .rank-chain {
+  color: var(--primary);
 }
 
 #scoreList li.rank-current::before {
