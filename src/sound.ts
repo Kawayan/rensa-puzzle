@@ -58,6 +58,12 @@ export function playMatchSound(chain: number): void {
   });
 }
 
+// ゲームオーバー時: sounds/gameover.mp3 を再生する
+export function playGameOverSound(): void {
+  const audio = new Audio("sounds/gameover.mp3");
+  void audio.play().catch(() => { /* 再生できない場合は無視 */ });
+}
+
 // パネル消失時: 高音から低音へのすっきりしたスウィープ
 export function playVanishSound(): void {
   const ctx = getAudioCtx();

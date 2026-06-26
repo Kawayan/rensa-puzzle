@@ -59,7 +59,7 @@ import {
   pointerToCell,
 } from "./geometry.js";
 import { initRng, randomColor } from "./rng.js";
-import { playMatchSound, playVanishSound } from "./sound.js";
+import { playMatchSound, playVanishSound, playGameOverSound } from "./sound.js";
 import { saveBest10 } from "./storage.js";
 import type { ScoreEntry } from "./storage.js";
 import { populateBgmSelect, playBgm, stopBgm } from "./bgm.js";
@@ -452,6 +452,8 @@ function renderScoreRanking(entries: ScoreEntry[], current: ScoreEntry): void {
 function triggerGameOver(): void {
   gameOver = true;
   isDragging = false;
+  stopBgm();
+  playGameOverSound();
   finalScoreEl.textContent = String(score);
   const current: ScoreEntry = { score, maxChain };
   const top10 = saveBest10(current);
