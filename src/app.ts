@@ -4,7 +4,8 @@ const CELL_COUNT = SIZE * SIZE;
 const SCORE_KEY = "puzzle-best10";  // localStorage キー
 const COLORS = ["red", "blue", "green", "yellow", "purple"] as const;
 const MIN_MATCH = 5;        // 消えるまでに必要な個数
-const FADE_MS = 2350;       // 消えるまでの時間
+const FADE_MS = 2350;       // 消えるまでの時間(初期値)
+const FADE_MS_MIN = 1800;   // 消えるまでの時間(最小値、chain=200以上)
 const FALL_MS = 300;        // 落下アニメ時間(CSS .falling と合わせる)
 const TIME_LIMIT_MS = 30000;          // タイムリミット
 const RECOVER_MS_PER_PANEL = 500;     // パネル1枚消すごとの回復時間
@@ -180,7 +181,7 @@ function initRng(seed: number): void {
 // chain=0 → FADE_MS(2350ms)、chain=200 → 1800ms。10チェインごとに段階的に短縮。
 function currentFadeMs(): number {
   const steps = Math.min(Math.floor(chain / 10), 20);
-  return Math.round(FADE_MS - steps * (FADE_MS - 1800) / 20);
+  return Math.round(FADE_MS - steps * (FADE_MS - FADE_MS_MIN) / 20);
 }
 
 // ---- 盤面生成 ----
