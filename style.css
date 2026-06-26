@@ -431,7 +431,7 @@ main {
 
 /* falling panels skip the swap transition timing (handled in JS via class) */
 .panel.falling {
-  transition: transform 0.28s cubic-bezier(0.4, 0.9, 0.6, 1), opacity 0.1s linear;
+  transition: transform 0.24s cubic-bezier(0.4, 0.9, 0.6, 1), opacity 0.1s linear;
 }
 
 /* ---- Start screen ---- */

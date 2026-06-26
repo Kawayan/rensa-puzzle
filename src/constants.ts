@@ -9,11 +9,11 @@ export const SCORE_KEY = "puzzle-best10"; // localStorage キー
 export const COLORS = ["red", "blue", "green", "yellow", "purple"] as const;
 
 export const MIN_MATCH = 5;               // 消えるまでに必要な個数
-export const FALL_MS = 300;               // 落下アニメ時間(CSS .falling と合わせる)
+export const FALL_MS = 250;               // 落下アニメ時間(CSS .falling と合わせる)
 export const TIME_LIMIT_MS = 30000;       // タイムリミット
 export const RECOVER_MS_PER_PANEL = 500;  // パネル1枚消すごとの回復時間
-export const SPEED_RAMP_MS = 15 * 60 * 1000; // 最高速度に到達するまでの時間
-export const SPEED_RAMP_MAX = 6;          // 最大速度倍率
+export const SPEED_RAMP_MS = 30 * 60 * 1000; // 最高速度に到達するまでの時間
+export const SPEED_RAMP_MAX = 15;          // 最大速度倍率
 export const SPEED_STEP_MS = 5 * 1000;    // レベルアップ（速度アップ）までの時間
 
 // チェイン・マイルストーン
