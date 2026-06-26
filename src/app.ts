@@ -1,17 +1,57 @@
 const VERSION = "1.0.0";
+
 const SIZE = 8;
 const CELL_COUNT = SIZE * SIZE;
 const SCORE_KEY = "puzzle-best10";  // localStorage キー
 const COLORS = ["red", "blue", "green", "yellow", "purple"] as const;
+
 const MIN_MATCH = 5;        // 消えるまでに必要な個数
-const FADE_MS = 2350;       // 消えるまでの時間(初期値)
-const FADE_MS_MIN = 1800;   // 消えるまでの時間(最小値、chain=200以上)
 const FALL_MS = 300;        // 落下アニメ時間(CSS .falling と合わせる)
 const TIME_LIMIT_MS = 30000;          // タイムリミット
 const RECOVER_MS_PER_PANEL = 500;     // パネル1枚消すごとの回復時間
 const SPEED_RAMP_MS = 15 * 60 * 1000; // 最高速度に到達するまでの時間
 const SPEED_RAMP_MAX = 6;             // 最大速度倍率
 const SPEED_STEP_MS = 5 * 1000;      // レベルアップ（速度アップ）までの時間
+
+// チェイン・マイルストーン
+const MILESTONE_CHAIN_INTERVAL = 50; // 何チェインごとにオーバーレイ表示するか
+
+// フェード時間の動的短縮
+const FADE_MS = 2350;        // 消えるまでの時間(初期値)
+const FADE_MS_MIN = 1000;    // 消えるまでの時間(最小値、chain=200以上)
+const FADE_CHAIN_STEP = 10;  // 何チェインごとにフェード時間を短縮するか
+const FADE_CHAIN_MAX  = 300; // フェード時間が最短(FADE_MS_MIN)に達するチェイン数
+
+// ドラッグ表示
+const DRAG_SCALE = 1.12; // ドラッグ中パネルの拡大率
+
+// タイムバーの色変化閾値(残り時間の割合)
+const TIME_BAR_MID_RATIO = 0.5; // この割合を下回ると黄色になる
+const TIME_BAR_LOW_RATIO = 0.2; // この割合を下回ると赤になる
+
+// フェードアニメーション
+const FADE_PASTEL_PCT = 25; // フェード中パネルの薄い領域の色混合割合(%)
+
+// アニメーションループ
+const TICK_MAX_DT_MS = 100; // フレーム間隔の上限(タブ非表示からの復帰で時間が飛ぶのを防ぐ)
+
+// 盤面初期化
+const BOARD_INIT_GUARD = 500; // 初期配置で5連結を解消するための最大試行回数
+
+// サウンド: マッチ音(アルペジオ)
+const SOUND_MATCH_GAIN         = 0.22; // 音量
+const SOUND_MATCH_ATTACK_S     = 0.01; // アタック時間(秒)
+const SOUND_MATCH_DECAY_S      = 0.22; // ディケイ時間(秒)
+const SOUND_MATCH_DUR_S        = 0.25; // ノートの持続時間(秒)
+const SOUND_MATCH_NOTE_DELAY_S = 0.07; // アルペジオのノート間隔(秒)
+const SOUND_MATCH_PITCH_RISE   = 0.30; // 1ティアあたりの最大音程上昇率
+
+// サウンド: 消失音(周波数スウィープ)
+const SOUND_VANISH_FREQ_HI = 880;  // スウィープ開始周波数(Hz)
+const SOUND_VANISH_FREQ_LO = 280;  // スウィープ終了周波数(Hz)
+const SOUND_VANISH_SWEEP_S = 0.18; // スウィープ時間(秒)
+const SOUND_VANISH_GAIN    = 0.18; // 音量
+const SOUND_VANISH_DUR_S   = 0.20; // 持続時間(秒)
 
 // ゲーム開始時刻。リセット時に更新し、LEVELと速度倍率を1に戻す。
 let sessionStartTime = performance.now();
@@ -112,9 +152,9 @@ function playMatchSound(): void {
   const ctx = getAudioCtx();
   const t = ctx.currentTime;
 
-  const tier = Math.floor(chain / 50);
-  const withinTier = chain % 50;
-  const pitchMult = 1 + (withinTier / 50) * 0.3; // tier内で最大30%上昇
+  const tier = Math.floor(chain / MILESTONE_CHAIN_INTERVAL);
+  const withinTier = chain % MILESTONE_CHAIN_INTERVAL;
+  const pitchMult = 1 + (withinTier / MILESTONE_CHAIN_INTERVAL) * SOUND_MATCH_PITCH_RISE;
 
   const tiers: { freqs: [number, number, number]; type: OscillatorType }[] = [
     { freqs: [523, 659, 784], type: "triangle" }, // C major  (やわらかい)
@@ -129,13 +169,14 @@ function playMatchSound(): void {
     const gain = ctx.createGain();
     osc.type = type;
     osc.frequency.value = hz * pitchMult;
-    gain.gain.setValueAtTime(0, t + i * 0.07);
-    gain.gain.linearRampToValueAtTime(0.22, t + i * 0.07 + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.07 + 0.22);
+    const nd = i * SOUND_MATCH_NOTE_DELAY_S;
+    gain.gain.setValueAtTime(0, t + nd);
+    gain.gain.linearRampToValueAtTime(SOUND_MATCH_GAIN, t + nd + SOUND_MATCH_ATTACK_S);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + nd + SOUND_MATCH_DECAY_S);
     osc.connect(gain);
     gain.connect(ctx.destination);
-    osc.start(t + i * 0.07);
-    osc.stop(t + i * 0.07 + 0.25);
+    osc.start(t + nd);
+    osc.stop(t + nd + SOUND_MATCH_DUR_S);
   });
 }
 
@@ -154,14 +195,14 @@ function playVanishSound(): void {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = "sine";
-  osc.frequency.setValueAtTime(880, t);
-  osc.frequency.exponentialRampToValueAtTime(280, t + 0.18);
-  gain.gain.setValueAtTime(0.18, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+  osc.frequency.setValueAtTime(SOUND_VANISH_FREQ_HI, t);
+  osc.frequency.exponentialRampToValueAtTime(SOUND_VANISH_FREQ_LO, t + SOUND_VANISH_SWEEP_S);
+  gain.gain.setValueAtTime(SOUND_VANISH_GAIN, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + SOUND_VANISH_SWEEP_S);
   osc.connect(gain);
   gain.connect(ctx.destination);
   osc.start(t);
-  osc.stop(t + 0.2);
+  osc.stop(t + SOUND_VANISH_DUR_S);
 }
 
 // ---- シード付き乱数 (Mulberry32) ----
@@ -180,8 +221,9 @@ function initRng(seed: number): void {
 // チェイン数に応じたフェード時間を返す。
 // chain=0 → FADE_MS(2350ms)、chain=200 → 1800ms。10チェインごとに段階的に短縮。
 function currentFadeMs(): number {
-  const steps = Math.min(Math.floor(chain / 10), 20);
-  return Math.round(FADE_MS - steps * (FADE_MS - FADE_MS_MIN) / 20);
+  const maxSteps = FADE_CHAIN_MAX / FADE_CHAIN_STEP;
+  const steps = Math.min(Math.floor(chain / FADE_CHAIN_STEP), maxSteps);
+  return Math.round(FADE_MS - steps * (FADE_MS - FADE_MS_MIN) / maxSteps);
 }
 
 // ---- 盤面生成 ----
@@ -235,7 +277,7 @@ function initBoard(): void {
     board[i] = makePanel(randomColor());
   }
   // 5個以上の塊が無くなるまで一部を塗り替える
-  for (let guard = 0; guard < 500; guard++) {
+  for (let guard = 0; guard < BOARD_INIT_GUARD; guard++) {
     const big = findComponents().filter((c) => c.length >= MIN_MATCH);
     if (big.length === 0) break;
     for (const comp of big) {
@@ -392,7 +434,7 @@ function followPointer(el: HTMLDivElement, clientX: number, clientY: number): vo
   const cellPx = (rect.width - (SIZE + 1) * gap) / SIZE;
   const x = clamp(clientX - rect.left - cellPx / 2, 0, rect.width - cellPx);
   const y = clamp(clientY - rect.top - cellPx / 2, 0, rect.height - cellPx);
-  el.style.transform = `translate(${x}px, ${y}px) scale(1.12)`;
+  el.style.transform = `translate(${x}px, ${y}px) scale(${DRAG_SCALE})`;
 }
 
 // ---- 消去判定 (仕様3・5) ----
@@ -508,7 +550,7 @@ function updateTimeBar(): void {
   const ratio = Math.max(0, Math.min(1, timeLeftMs / TIME_LIMIT_MS));
   timeBarFillEl.style.width = `${ratio * 100}%`;
   timeBarFillEl.style.background =
-    ratio > 0.5 ? "var(--time-high)" : ratio > 0.2 ? "var(--time-mid)" : "var(--time-low)";
+    ratio > TIME_BAR_MID_RATIO ? "var(--time-high)" : ratio > TIME_BAR_LOW_RATIO ? "var(--time-mid)" : "var(--time-low)";
   timeBarTextEl.textContent = String(Math.ceil(timeLeftMs / 1000));
 }
 
@@ -574,7 +616,7 @@ function tick(): void {
 
   // 残り時間を減らす(タブ非表示などによる大ジャンプは抑制)
   if (lastFrameTime === 0) lastFrameTime = now;
-  const dt = Math.min(now - lastFrameTime, 100);
+  const dt = Math.min(now - lastFrameTime, TICK_MAX_DT_MS);
   lastFrameTime = now;
   timeLeftMs -= dt * timeSpeedRate();
 
@@ -618,7 +660,7 @@ function tick(): void {
       // 上から徐々に色が抜けていき、残った色が下端まで減ると消失する
       const prog = Math.min(elapsed / fadeMs, 1);
       const pct = (prog * 100).toFixed(1);
-      const light = `color-mix(in srgb, var(--c-${p.color}) 25%, white)`;
+      const light = `color-mix(in srgb, var(--c-${p.color}) ${FADE_PASTEL_PCT}%, white)`;
       el.style.background = `linear-gradient(to bottom, ${light} ${pct}%, var(--c-${p.color}) ${pct}%)`;
     }
   }
@@ -642,7 +684,7 @@ function tick(): void {
     scoreEl.textContent = String(score);
     chain++;
     chainEl.textContent = String(chain);
-    if (chain % 50 === 0) showChainMilestone(chain);
+    if (chain % MILESTONE_CHAIN_INTERVAL === 0) showChainMilestone(chain);
     playVanishSound();
     applyGravity();
   }
