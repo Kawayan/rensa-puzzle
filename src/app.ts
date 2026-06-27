@@ -22,7 +22,6 @@ import {
   DRAG_SCALE,
   TIME_BAR_MID_RATIO,
   TIME_BAR_LOW_RATIO,
-  FADE_PASTEL_PCT,
   TICK_MAX_DT_MS,
   BOARD_INIT_GUARD,
 } from "./constants.js";
@@ -519,11 +518,10 @@ function tick(): void {
     if (elapsed >= fadeMs) {
       expired.push(i);
     } else if (el) {
-      // 上から徐々に色が抜けていき、残った色が下端まで減ると消失する
+      // 上から徐々に白いベールがかかり、下端まで進むと消失する。
+      // 背景画像を保持したまま CSS の --fade-pct で .panel::after のグラデを動かす。
       const prog = Math.min(elapsed / fadeMs, 1);
-      const pct = (prog * 100).toFixed(1);
-      const light = `color-mix(in srgb, var(--c-${p.color}) ${FADE_PASTEL_PCT}%, white)`;
-      el.style.background = `linear-gradient(to bottom, ${light} ${pct}%, var(--c-${p.color}) ${pct}%)`;
+      el.style.setProperty("--fade-pct", `${(prog * 100).toFixed(1)}%`);
     }
   }
 

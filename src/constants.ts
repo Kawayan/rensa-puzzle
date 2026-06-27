@@ -32,9 +32,6 @@ export const DRAG_SCALE = 1.12; // ドラッグ中パネルの拡大率
 export const TIME_BAR_MID_RATIO = 0.5; // この割合を下回ると黄色になる
 export const TIME_BAR_LOW_RATIO = 0.2; // この割合を下回ると赤になる
 
-// フェードアニメーション
-export const FADE_PASTEL_PCT = 25; // フェード中パネルの薄い領域の色混合割合(%)
-
 // アニメーションループ
 export const TICK_MAX_DT_MS = 100; // フレーム間隔の上限(タブ非表示からの復帰で時間が飛ぶのを防ぐ)
 
