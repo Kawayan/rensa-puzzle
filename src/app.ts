@@ -47,6 +47,8 @@ import {
   startscreenEl,
   startBtn,
   bgmSelectEl,
+  bgmVolumeEl,
+  bgmVolumeValueEl,
   playtimeEl,
 } from "./dom.js";
 import {
@@ -62,7 +64,7 @@ import { initRng, randomColor } from "./rng.js";
 import { playMatchSound, playVanishSound, playGameOverSound } from "./sound.js";
 import { saveBest10 } from "./storage.js";
 import type { ScoreEntry } from "./storage.js";
-import { populateBgmSelect, playBgm, stopBgm } from "./bgm.js";
+import { populateBgmSelect, playBgm, stopBgm, getVolumeStep, setVolumeStep } from "./bgm.js";
 
 // ---- 状態 ----
 let board: (Panel | null)[] = new Array(CELL_COUNT).fill(null);
@@ -628,6 +630,15 @@ void populateBgmSelect(bgmSelectEl);
 // スタート画面でBGMを選択したら即プレビュー再生する
 bgmSelectEl.addEventListener("change", () => {
   playBgm(bgmSelectEl.value);
+});
+
+// 音量スライダーを記憶値で初期化し、操作に応じて即反映する
+bgmVolumeEl.value = String(getVolumeStep());
+bgmVolumeValueEl.textContent = String(getVolumeStep());
+bgmVolumeEl.addEventListener("input", () => {
+  const step = Number(bgmVolumeEl.value);
+  setVolumeStep(step);
+  bgmVolumeValueEl.textContent = String(step);
 });
 
 startBtn.addEventListener("click", startGame);

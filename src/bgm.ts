@@ -5,9 +5,36 @@
 const BGM_DIR = "bgm";
 const LIST_URL = `${BGM_DIR}/list.json`;
 const PREF_KEY = "puzzle-bgm"; // 前回選択した曲を記憶する localStorage キー
-const VOLUME = 0.4;
+const VOLUME_KEY = "puzzle-bgm-volume"; // 音量段階を記憶する localStorage キー
+const VOLUME_STEPS = 10;        // スライダーの段階数
+const DEFAULT_VOLUME_STEP = 4;  // 既定の音量段階(従来の 0.4 相当)
 
 let audio: HTMLAudioElement | null = null;
+let volumeStep = loadVolumeStep(); // 現在の音量段階(0〜VOLUME_STEPS)
+
+// localStorage から音量段階を読み込む。無効値は既定値にフォールバック。
+function loadVolumeStep(): number {
+  const raw = localStorage.getItem(VOLUME_KEY);
+  const n = raw === null ? NaN : Number(raw);
+  if (!Number.isFinite(n)) return DEFAULT_VOLUME_STEP;
+  return Math.max(0, Math.min(VOLUME_STEPS, Math.round(n)));
+}
+
+// 現在の音量段階(0〜VOLUME_STEPS)を返す。スライダーの初期値に使う。
+export function getVolumeStep(): number {
+  return volumeStep;
+}
+
+// 音量段階を設定し、記憶・再生中の音量へ即反映する。
+export function setVolumeStep(step: number): void {
+  volumeStep = Math.max(0, Math.min(VOLUME_STEPS, Math.round(step)));
+  try {
+    localStorage.setItem(VOLUME_KEY, String(volumeStep));
+  } catch {
+    /* storage unavailable */
+  }
+  if (audio) audio.volume = volumeStep / VOLUME_STEPS;
+}
 
 // 拡張子を除いた表示名(例: "bgm1.mp3" → "bgm1")
 function labelOf(file: string): string {
@@ -61,7 +88,7 @@ export function playBgm(file: string): void {
   if (!file) return;
   audio = new Audio(`${BGM_DIR}/${file}`);
   audio.loop = true;
-  audio.volume = VOLUME;
+  audio.volume = volumeStep / VOLUME_STEPS;
   void audio.play().catch(() => {
     /* 自動再生がブロックされた場合は無視 */
   });

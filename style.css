@@ -528,7 +528,41 @@ main {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  margin: 0 0 14px;
+}
+
+.start-volume {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   margin: 0 0 26px;
+}
+
+.start-volume label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+#bgm-volume {
+  cursor: pointer;
+  accent-color: var(--primary);
+  width: 130px;
+}
+
+#bgm-volume:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+#bgm-volume-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 1.2em;
+  text-align: right;
 }
 
 .start-bgm label {

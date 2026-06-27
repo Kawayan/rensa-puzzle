@@ -20,4 +20,6 @@ export const chainMilestoneEl = document.getElementById("chain-milestone") as HT
 export const startscreenEl = document.getElementById("startscreen") as HTMLDivElement;
 export const startBtn = document.getElementById("startBtn") as HTMLButtonElement;
 export const bgmSelectEl = document.getElementById("bgm-select") as HTMLSelectElement;
+export const bgmVolumeEl = document.getElementById("bgm-volume") as HTMLInputElement;
+export const bgmVolumeValueEl = document.getElementById("bgm-volume-value") as HTMLSpanElement;
 export const playtimeEl = document.getElementById("playtime") as HTMLDivElement;
