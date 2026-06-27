@@ -121,6 +121,7 @@ async function main() {
     recordVideo: { dir: OUT_DIR, size: VIEWPORT },
   });
   const page = await context.newPage();
+  const videoStart = Date.now(); // 録画開始のおおよその基準時刻(GIF先頭トリム用)
 
   // seed 固定の場合、ページ読み込み前に Math.random を差し替える
   if (fixedSeed !== null) {
@@ -136,6 +137,13 @@ async function main() {
   }
 
   await page.goto(`http://127.0.0.1:${PORT}/`);
+
+  // スタート画面が表示されるので、BGMを「なし」にしてスタートボタンを押す。
+  // これを押さないと reset() が呼ばれず盤面パネルが描画されない。
+  await page.waitForSelector('#startBtn');
+  await page.selectOption('#bgm-select', '').catch(() => {}); // 既定で「なし」だが念のため
+  await page.click('#startBtn');
+  await page.waitForSelector('#startscreen', { state: 'hidden' }); // スタート画面が消えるのを待つ
   await page.waitForSelector('#board .panel');
   await sleep(700); // 初期描画を待つ
 
@@ -152,6 +160,11 @@ async function main() {
   // resolveMatches() はドラッグ中にも呼ばれるため、長いスイープで
   // 同色 5 個以上の連結が生まれやすく、フェードアニメが映える。
   // ================================================================
+
+  // ゲームプレイ開始時刻を記録。スタート画面の表示分を GIF 先頭からトリムするのに使う。
+  // 直前に 0.5s だけ盤面を見せたいので、その分を残してカットする。
+  const TRIM_LEAD_S = 0.5;
+  const trimStartS = Math.max(0, (Date.now() - videoStart) / 1000 - TRIM_LEAD_S);
 
   // Move 1: row=4 を左端から右端へ横断 (≈ 1.0s)
   console.log('  move 1: row=4 横断 →');
@@ -203,11 +216,12 @@ async function main() {
     'split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse',
   ].join(',');
 
-  const result = spawnSync(
-    'ffmpeg',
-    ['-y', '-i', OUT_WEBM, '-vf', vf, '-loop', '0', OUT_GIF],
-    { stdio: 'inherit', shell: false },
-  );
+  // -ss を入力前に置き、スタート画面が映る先頭部分をスキップする
+  const ffmpegArgs = ['-y'];
+  if (trimStartS > 0) ffmpegArgs.push('-ss', trimStartS.toFixed(3));
+  ffmpegArgs.push('-i', OUT_WEBM, '-vf', vf, '-loop', '0', OUT_GIF);
+
+  const result = spawnSync('ffmpeg', ffmpegArgs, { stdio: 'inherit', shell: false });
 
   if (result.status === 0) {
     // docs/ にもコピーして README から参照できるようにする
