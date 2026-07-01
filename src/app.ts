@@ -57,6 +57,7 @@ import {
   colOf,
   clamp,
   boardMetrics,
+  invalidateMetrics,
   cellTransform,
   pointerToCell,
 } from "./geometry.js";
@@ -86,6 +87,11 @@ let lastFrameTime = 0;          // 直前フレームの時刻(delta計算用)
 let gameOver = false;
 let running = false;            // ゲームループ稼働中フラグ(スタート画面表示中はfalse)
 let lastSpeedStep = 0;          // 前フレームの速度ステップ(レベル更新検知用)
+
+// 毎フレームの無駄な DOM 書き込みを抑えるための直近値キャッシュ
+let lastElapsedSec = -1; // 直近に表示したプレイ秒数(playtime更新のゲート)
+let lastBarBand = "";    // 直近のタイムバー色バンド("high"|"mid"|"low")
+let lastBarSec = -1;     // 直近のタイムバー表示秒
 
 // ゲーム開始時刻。リセット時に更新し、LEVELと速度倍率を1に戻す。
 let sessionStartTime = performance.now();
@@ -236,7 +242,8 @@ function onPointerDown(e: PointerEvent): void {
   // 落下アニメ中(isFalling)でも掴めるようにする。board[] は重力処理後に確定済みで
   // 視覚位置だけがアニメ中なので、論理的には掴んで問題ない。
   if (gameOver) return;
-  const { row, col } = pointerToCell(e.clientX, e.clientY);
+  const rect = boardEl.getBoundingClientRect();
+  const { row, col } = pointerToCell(e.clientX, e.clientY, rect);
   const cell = idx(row, col);
   const panel = board[cell];
   if (!panel) return;
@@ -254,7 +261,7 @@ function onPointerDown(e: PointerEvent): void {
   el.classList.remove("falling"); // 落下トランジションを切り、掴んだ瞬間に指へ追従させる
   el.classList.add("dragging");
   document.body.style.cursor = "grabbing";
-  followPointer(el, e.clientX, e.clientY);
+  followPointer(el, e.clientX, e.clientY, rect);
   e.preventDefault();
 }
 
@@ -264,10 +271,12 @@ function onPointerMove(e: PointerEvent): void {
   const held = board[dragCell];
   if (!held || held.id !== selectedId) return;
 
+  // rect はこのイベントで1回だけ取得し、追従と当たり判定の両方で使い回す
+  const rect = boardEl.getBoundingClientRect();
   const heldEl = panelEls.get(selectedId)!;
-  followPointer(heldEl, e.clientX, e.clientY);
+  followPointer(heldEl, e.clientX, e.clientY, rect);
 
-  const { row, col } = pointerToCell(e.clientX, e.clientY);
+  const { row, col } = pointerToCell(e.clientX, e.clientY, rect);
   const newCell = idx(row, col);
   if (newCell === dragCell) return;
 
@@ -303,9 +312,14 @@ function onPointerUp(e: PointerEvent): void {
   resolveMatches();
 }
 
-// 保持パネルをポインタ位置へ追従(中心合わせ + 拡大)
-function followPointer(el: HTMLDivElement, clientX: number, clientY: number): void {
-  const rect = boardEl.getBoundingClientRect();
+// 保持パネルをポインタ位置へ追従(中心合わせ + 拡大)。
+// rect は呼び出し側で1イベント1回だけ取得して渡す(cell はキャッシュ参照)。
+function followPointer(
+  el: HTMLDivElement,
+  clientX: number,
+  clientY: number,
+  rect: DOMRect,
+): void {
   const { cell } = boardMetrics();
   const x = clamp(clientX - rect.left - cell / 2, 0, rect.width - cell);
   const y = clamp(clientY - rect.top - cell / 2, 0, rect.height - cell);
@@ -423,14 +437,21 @@ function timeSpeedRate(): number {
 
 function updateTimeBar(): void {
   const ratio = Math.max(0, Math.min(1, timeLeftMs / TIME_LIMIT_MS));
+  // 幅は時間経過でなめらかに変化するため毎フレーム更新する
   timeBarFillEl.style.width = `${ratio * 100}%`;
-  timeBarFillEl.style.background =
-    ratio > TIME_BAR_MID_RATIO
-      ? "var(--time-high)"
-      : ratio > TIME_BAR_LOW_RATIO
-        ? "var(--time-mid)"
-        : "var(--time-low)";
-  timeBarTextEl.textContent = String(Math.ceil(timeLeftMs / 1000));
+  // 色バンドは境界をまたいだ時だけ書き換える
+  const band = ratio > TIME_BAR_MID_RATIO ? "high" : ratio > TIME_BAR_LOW_RATIO ? "mid" : "low";
+  if (band !== lastBarBand) {
+    lastBarBand = band;
+    timeBarFillEl.style.background =
+      band === "high" ? "var(--time-high)" : band === "mid" ? "var(--time-mid)" : "var(--time-low)";
+  }
+  // 残り秒(切り上げ)は変わった時だけ書き換える
+  const sec = Math.ceil(timeLeftMs / 1000);
+  if (sec !== lastBarSec) {
+    lastBarSec = sec;
+    timeBarTextEl.textContent = String(sec);
+  }
 }
 
 // ---- ゲームオーバー ----
@@ -469,10 +490,9 @@ function tick(): void {
   if (!running) return;
   const now = performance.now();
 
-  // ゲームオーバー中は時間も盤面も止める
+  // ゲームオーバー中はループを止める(再開は startGame 経由)
   if (gameOver) {
-    lastFrameTime = now;
-    requestAnimationFrame(tick);
+    running = false;
     return;
   }
 
@@ -489,33 +509,40 @@ function tick(): void {
     levelEl.textContent = String(step + 1);
   }
 
-  // プレイ時間を秒で更新
+  // プレイ時間を秒で更新(秒が変わった時だけ書き換える)
   const elapsedSec = Math.floor((now - sessionStartTime) / 1000);
-  playtimeEl.innerHTML = `${elapsedSec}<small>s</small>`;
+  if (elapsedSec !== lastElapsedSec) {
+    lastElapsedSec = elapsedSec;
+    playtimeEl.innerHTML = `${elapsedSec}<small>s</small>`;
+  }
+
+  // フェード中パネルの有無はフレーム内で不変。1回だけ走査して使い回す
+  const anyFading = board.some((p) => p && p.fadingSince !== null);
+
   if (timeLeftMs <= 0) {
     timeLeftMs = 0;
     updateTimeBar();
     // フェード中パネルがある間はゲームオーバーを遅らせる
-    if (!board.some((p) => p && p.fadingSince !== null)) {
+    if (!anyFading) {
       triggerGameOver();
-      requestAnimationFrame(tick);
+      running = false; // ループ停止(再開は startGame 経由)
       return;
     }
   }
 
-  const anyFading = board.some((p) => p && p.fadingSince !== null);
   if (!anyFading && !isFalling && chain !== 0) {
     chain = 0;
     chainEl.textContent = "0";
   }
 
+  // フェード時間は chain にのみ依存し、このループ中は不変なので先に1回計算する
+  const fadeMs = currentFadeMs();
   const expired: number[] = [];
   for (let i = 0; i < CELL_COUNT; i++) {
     const p = board[i];
     if (!p || p.fadingSince === null) continue;
     const elapsed = now - p.fadingSince;
     const el = panelEls.get(p.id);
-    const fadeMs = currentFadeMs();
     if (elapsed >= fadeMs) {
       expired.push(i);
     } else if (el) {
@@ -574,6 +601,10 @@ function reset(): void {
   lastFrameTime = 0;
   gameOver = false;
   gameOverEl.classList.add("hidden");
+  // 表示ゲート用キャッシュをリセットし、バー・秒表示を確実に描き直す
+  lastElapsedSec = -1;
+  lastBarBand = "";
+  lastBarSec = -1;
   updateTimeBar();
   sessionStartTime = performance.now();
   lastSpeedStep = 0;
@@ -621,6 +652,7 @@ function startGame(): void {
 resetBtn.addEventListener("click", showStartScreen);
 restartBtn.addEventListener("click", showStartScreen);
 window.addEventListener("resize", () => {
+  invalidateMetrics(); // ボード幅が変わるので寸法キャッシュを破棄
   if (!isDragging) syncAllPositions();
 });
 
